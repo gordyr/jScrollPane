@@ -1,3 +1,5 @@
+
+// Script: jScrollPane - cross browser customisable scrollbars
 // ==ClosureCompiler==
 // @output_file_name default.js
 // @compilation_level SIMPLE_OPTIMIZATIONS
@@ -81,7 +83,7 @@
                                 var w = s.contentWidth || pane[0].scrollWidth, h = pane[0].scrollHeight;
                                 pane.css('overflow', '');
                                 return {width: w, height: h};
- 		
+     	
             }                          
 
             function initialise(s)
@@ -243,6 +245,7 @@
                 originalScrollLeft && elem.scrollLeft(0) && scrollToX(originalScrollLeft, false);
 
                 elem.trigger('jsp-initialised', [isScrollableH || isScrollableV]);
+                settings.oncomplete();
             }
 
             function initialiseVerticalScroll()
@@ -879,11 +882,11 @@
                         var dX = horizontalDragPosition, dY = verticalDragPosition;
 
                         if (!settings.isScrollableV){
-                            console.log(settings.isScrollableV)
+                           
                             jsp.scrollBy(-deltaY * settings.mouseWheelSpeed, deltaY * settings.mouseWheelSpeed, false);
                         }
                         else{
-                            jsp.scrollBy(deltaX * settings.mouseWheelSpeed, -deltaY * settings.mouseWheelSpeed, false);
+                            jsp.scrollBy(deltaX * settings.mouseWheelSpeed, -deltaY * settings.mouseWheelSpeed, true);
                         }
                                 }
                         // return true if there was no movement so rest of screen can scroll
@@ -1449,7 +1452,8 @@
         speed                       : 30,       // Default speed when others falsey
         scrollPagePercent           : .8,        // Percent of visible area scrolled when pageUp/Down or track area pressed
         isScrollableV               : true,        // force overflow-y hidden
-        isScrollableH               : true        // force overflow-x hidden
+        isScrollableH               : true,       // force overflow-x hidden
+        oncomplete                  : function(){}
     };
 
 })(jQuery,this);
