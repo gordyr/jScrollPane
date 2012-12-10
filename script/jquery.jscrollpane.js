@@ -1,5 +1,3 @@
-
-// Script: jScrollPane - cross browser customisable scrollbars
 // ==ClosureCompiler==
 // @output_file_name default.js
 // @compilation_level SIMPLE_OPTIMIZATIONS
@@ -83,7 +81,7 @@
                                 var w = s.contentWidth || pane[0].scrollWidth, h = pane[0].scrollHeight;
                                 pane.css('overflow', '');
                                 return {width: w, height: h};
-     	
+         
             }                          
 
             function initialise(s)
@@ -872,6 +870,224 @@
                 var scrollableWidth = contentWidth - paneWidth;
                 return (scrollableWidth > 20) && (scrollableWidth - contentPositionX() < 10);
             }
+            
+            
+            
+            
+            
+
+// SmoothScroll v1.0.1
+// Licensed under the terms of the MIT license.
+
+// People involved
+//  - Balazs Galambosi (maintainer)  
+//  - Patrick Brunner  (original idea)
+//  - Michael Herf     (Pulse Algorithm)
+
+// Scroll Variables (tweakable)
+
+        
+
+var framerate = 150; // [Hz]
+var animtime  = 400; // [px]
+var stepsize  = 120; // [px]
+
+
+var pulseAlgorithm = true;
+var pulseScale     = 8;
+var pulseNormalize = 1;
+
+
+var acceleration   = true;
+var accelDelta     = 20;  // 20
+var accelMax       = 1;   // 1
+
+
+
+
+
+
+
+
+/************************************************
+ * SCROLLING 
+ ************************************************/
+ 
+var que = [];
+var pending = false;
+var lastScroll = +new Date;
+
+/**
+ * Pushes scroll actions to the scrolling queue.
+ */
+function smoothWheel(left, top, delay) {
+    console.log(top);
+        delay || (delay = 1000);
+        //var left = (deltaX*-1);
+        //var top = (deltaY*-1);
+   
+
+    if (acceleration) {
+        var now = +new Date;
+        var elapsed = now - lastScroll;
+        if (elapsed < accelDelta) {
+            var factor = (1 + (30 / elapsed)) / 2;
+            if (factor > 1) {
+                factor = Math.min(factor, accelMax);
+                left = (left * factor);
+                top  = (top *  factor);
+            }
+        }
+        lastScroll = +new Date;
+    }          
+    
+    // push a scroll command
+    que.push({
+        x: left, 
+        y: top, 
+        lastX: (left < 0) ? 0.99 : -0.99,
+        lastY: (top  < 0) ? 0.99 : -0.99, 
+        start: +new Date
+    });
+        
+    // don't act if there's a pending queue
+    if (pending) {
+        return;
+    }  
+
+    var elem = document.body;
+    
+    var step = function(time) {
+        
+        var now = time || +new Date;
+        var scrollX = 0;
+        var scrollY = 0; 
+    //console.log(que.length);
+        for (var i = 0; i < que.length; i++) {
+            
+            var item = que[i];
+            var elapsed  = now - item.start;
+            var finished = (elapsed >= animtime);
+            
+            // scroll position: [0, 1]
+            var position = (finished) ? 1 : elapsed / animtime;
+            
+            // easing [optional]
+            if (pulseAlgorithm) {
+                position = pulse(position);
+            }
+            
+            // only need the difference
+            var x = ((item.x * position) - item.lastX);
+            var y = ((item.y * position) - item.lastY);
+            
+            // add this to the total scrolling
+            scrollX = (scrollX + x);
+            scrollY = (scrollY + y);            
+            
+            // update last values
+            item.lastX = (item.lastX + x);
+            item.lastY = (item.lastY + y);
+        
+            // delete and step back if it's over
+            if (finished) {
+                que.splice(i, 1); i--;
+            }
+            
+          // console.log(y);
+        }
+
+        // scroll left and top
+     
+          //pane.scrollByX(scrollY*80);
+          jsp.scrollBy(scrollX*settings.mouseWheelSpeed, scrollY*settings.mouseWheelSpeed)
+        
+        
+        // clean up if there's nothing left to do
+        if (!left && !top) {
+            que = [];
+        }
+        
+        if (que.length) { 
+            requestFrame(step, elem, (delay / framerate + 1)); 
+        } else { 
+            pending = false;
+        }
+    };
+    
+    // start a new queue of actions
+    requestFrame(step, elem, 0);
+    pending = true;
+}
+
+
+
+/***********************************************
+ * HELPERS
+ ***********************************************/
+
+
+
+function directionCheck(x, y) {
+    x = (x > 0) ? 1 : -1;
+    y = (y > 0) ? 1 : -1;
+    if (direction.x !== x || direction.y !== y) {
+        direction.x = x;
+        direction.y = y;
+        que = [];
+        lastScroll = 0;
+    }
+}
+
+var requestFrame = (function(){
+      return  window.requestAnimationFrame       || 
+              window.webkitRequestAnimationFrame || 
+              function(callback, element, delay){
+                  window.setTimeout(callback, delay || (1000/60));
+              };
+})();
+
+
+/***********************************************
+ * PULSE
+ ***********************************************/
+ 
+/**
+ * Viscous fluid with a pulse for part and decay for the rest.
+ * - Applies a fixed force over an interval (a damped acceleration), and
+ * - Lets the exponential bleed away the velocity over a longer interval
+ * - Michael Herf, http://stereopsis.com/stopping/
+ */
+function pulse_(x) {
+    var val, start, expx;
+    // test
+    x = x * pulseScale;
+    if (x < 1) { // acceleartion
+        val = x - (1 - Math.exp(-x));
+    } else {     // tail
+        // the previous animation ended here:
+        start = Math.exp(-1);
+        // simple viscous drag
+        x -= 1;
+        expx = 1 - Math.exp(-x);
+        val = start + (expx * (1 - start));
+    }
+    return val * pulseNormalize;
+}
+
+function pulse(x) {
+    if (x >= 1) return 1;
+    if (x <= 0) return 0;
+
+    if (pulseNormalize == 1) {
+        pulseNormalize /= pulse_(1);
+    }
+    return pulse_(x);
+}
+
+            
+            
+            
 
             function initMousewheel()
             {
@@ -882,11 +1098,10 @@
                         var dX = horizontalDragPosition, dY = verticalDragPosition;
 
                         if (!settings.isScrollableV){
-                           
-                            jsp.scrollBy(-deltaY * settings.mouseWheelSpeed, deltaY * settings.mouseWheelSpeed, false);
+                                smoothWheel(-deltaY, deltaY);                           
                         }
                         else{
-                            jsp.scrollBy(deltaX * settings.mouseWheelSpeed, -deltaY * settings.mouseWheelSpeed, true);
+                            smoothWheel(deltaX, -deltaY);
                         }
                                 }
                         // return true if there was no movement so rest of screen can scroll
