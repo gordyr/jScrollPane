@@ -1,7 +1,3 @@
-// ==ClosureCompiler==
-// @output_file_name default.js
-// @compilation_level SIMPLE_OPTIMIZATIONS
-// ==/ClosureCompiler==
 
 
 // Script: jScrollPane - cross browser customisable scrollbars
@@ -315,7 +311,11 @@
                                 'mousemove.jsp',
                                 function(e)
                                 {
-                                    positionDragY(e.pageY - startY, false);
+                                   if(!TC.home.navopen){
+                                           //setTimeout(function(){
+                                                                positionDragY(e.pageY - startY, false);
+                                           //},0);
+                                   }
                                 }
                             ).bind('mouseup.jsp mouseleave.jsp', cancelDrag);
                             return false;
@@ -393,19 +393,19 @@
                         function(e)
                         {
                             // Stop IE from allowing text selection
-                            $('html').bind('dragstart.jsp selectstart.jsp', nil);
+                            $(document).bind('dragstart.jsp selectstart.jsp', nil);
 
                             horizontalDrag.addClass('jspActive');
 
                             var startX = e.pageX - horizontalDrag.position().left;
 
-                            $('html').bind(
-                                'mousemove.jsp',
-                                function(e)
-                                {
-                                    positionDragX(e.pageX - startX, false);
-                                }
-                            ).bind('mouseup.jsp mouseleave.jsp', cancelDrag);
+                                $('html').bind('mousemove.jsp',function(e){                                 
+                                    if(!TC.home.navopen){
+                                              //setTimeout(function(){
+                                                                positionDragX(e.pageX - startX, false);
+                                             // },0);
+                                    }
+                                }).bind('mouseup.jsp mouseleave.jsp', cancelDrag);
                             return false;
                         }
                     );
@@ -429,6 +429,8 @@
 
             function resizeScrollbars()
             {
+                                
+                                console.log('scrollbar');
                 if (isScrollableH && isScrollableV) {
                     var horizontalTrackHeight = horizontalTrack.outerHeight(),
                         verticalTrackWidth = verticalTrack.outerWidth();
@@ -697,9 +699,11 @@
 
             function _positionDragY(destY)
             {
-                if (destY === undefined) {
-                    destY = verticalDrag.position().top;
-                }
+                
+                setTimeout(function(){
+                                if (destY === undefined) {
+                                destY = verticalDrag.position().top;
+                                }
 
                 container.scrollTop(0);
                 verticalDragPosition = destY;
@@ -716,8 +720,11 @@
                 }
 
                 updateVerticalArrows(isAtTop, isAtBottom);
-                pane.css('top', destTop);
+                
+                                pane.css('top', destTop);
+              
                 elem.trigger('jsp-scroll-y', [-destTop, isAtTop, isAtBottom]).trigger('scroll');
+                },0);
             }
 
             function positionDragX(destX, animate)
@@ -744,12 +751,13 @@
 
             function _positionDragX(destX)
             {
-                if (destX === undefined) {
-                    destX = horizontalDrag.position().left;
-                }
+                                setTimeout(function(){
+                                                                if (destX === undefined) {
+                                                                destX = horizontalDrag.position().left;
+                                                                }
 
-                container.scrollTop(0);
-                horizontalDragPosition = destX;
+                                                                 container.scrollTop(0);
+                                                                horizontalDragPosition = destX;
 
                 var isAtLeft = horizontalDragPosition === 0,
                     isAtRight = horizontalDragPosition == dragMaxX,
@@ -763,8 +771,12 @@
                 }
 
                 updateHorizontalArrows(isAtLeft, isAtRight);
-                pane.css('left', destLeft);
-                elem.trigger('jsp-scroll-x', [-destLeft, isAtLeft, isAtRight]).trigger('scroll');
+                
+                
+                        pane.css('left', destLeft);        
+               
+               elem.trigger('jsp-scroll-x', [-destLeft, isAtLeft, isAtRight]).trigger('scroll');
+                                },0);
             }
 
             function updateVerticalArrows(isAtTop, isAtBottom)
@@ -871,248 +883,133 @@
                 return (scrollableWidth > 20) && (scrollableWidth - contentPositionX() < 10);
             }
             
-            
-            
-            
-            
-
-// SmoothScroll v1.0.1
-// Licensed under the terms of the MIT license.
-
-// People involved
-//  - Balazs Galambosi (maintainer)  
-//  - Patrick Brunner  (original idea)
-//  - Michael Herf     (Pulse Algorithm)
-
-// Scroll Variables (tweakable)
-
-        
-
-var framerate = 150; // [Hz]
-var animtime  = 400; // [px]
-var stepsize  = 120; // [px]
-
-
-var pulseAlgorithm = true;
-var pulseScale     = 8;
-var pulseNormalize = 1;
-
-
-var acceleration   = true;
-var accelDelta     = 20;  // 20
-var accelMax       = 1;   // 1
-
-
-
-
-
-
-
-
-/************************************************
- * SCROLLING 
- ************************************************/
  
-var que = [];
-var pending = false;
-var lastScroll = +new Date;
+            
+var container, running=false, currentY = 0, targetY = 0, oldY = 0, maxScrollTop= 0, minScrollTop,
+            direction,
+            onRenderCallback=null,
+            fricton = 0.85, // higher value for slower deceleration
+            vy = 0,
+            stepAmt = 25,
+            minMovement = 0.1,
+            ts=0.1;
 
-/**
- * Pushes scroll actions to the scrolling queue.
- */
-function smoothWheel(left, top, delay) {
-    console.log(top);
-        delay || (delay = 1000);
-        //var left = (deltaX*-1);
-        //var top = (deltaY*-1);
+     function smoothWheel(amt) {                              
+                                targetY += amt;
+                                vy += (targetY - oldY) * stepAmt;           
+                                oldY = targetY;
+    }
+     function render() {
+        if (vy < -(minMovement) || vy > minMovement) {
+                                
+            if(direction=='left' || direction =='right'){
+                                var atEnd = (jsp.getPercentScrolledX() == 1);
+                      jsp.scrollByX(vy);
+            }
+            else{
+                                var atEnd = (jsp.getPercentScrolledY() == 1);
+                      jsp.scrollByY(vy);          
+            }
+          
+            vy *= fricton;
+           //console.log('width: '+jsp.getContentWidth()+', pos: '+ (jsp.getContentPositionX() + TC.home.cache.windowWidth));
+            if(Math.abs(vy) < 0.1|| atEnd || TC.home.navopen){
+                                running = false;
+                                vy = 0;
+            }
+          
+
+            if(onRenderCallback){
+                onRenderCallback();
+            }
+        }
+    }
+     function animateLoop() {
+        if(! running)return;
+        requestAnimFrame(animateLoop);
+        render();
+    }
+    function onWheel(e) {
+        e.preventDefault();
+        var evt = e.originalEvent;
+       
+        var delta = evt.detail ? evt.detail * -1 : evt.wheelDelta / 40;
+        var dir = delta < 0 ? -1 : 1;
+        if (dir != direction) {
+            vy = 0;
+            direction = dir;
+        }
+        
+        updateScrollTarget(delta);
+    }
+
+  
+    window.requestAnimFrame = (function () {
+        return window.requestAnimationFrame ||
+                window.webkitRequestAnimationFrame ||
+                window.mozRequestAnimationFrame ||
+                window.oRequestAnimationFrame ||
+                window.msRequestAnimationFrame ||
+                function (callback) {
+                    window.setTimeout(callback, 1000 / 60);
+                };
+              
+                
+    })();
+
    
-
-    if (acceleration) {
-        var now = +new Date;
-        var elapsed = now - lastScroll;
-        if (elapsed < accelDelta) {
-            var factor = (1 + (30 / elapsed)) / 2;
-            if (factor > 1) {
-                factor = Math.min(factor, accelMax);
-                left = (left * factor);
-                top  = (top *  factor);
-            }
-        }
-        lastScroll = +new Date;
-    }          
-    
-    // push a scroll command
-    que.push({
-        x: left, 
-        y: top, 
-        lastX: (left < 0) ? 0.99 : -0.99,
-        lastY: (top  < 0) ? 0.99 : -0.99, 
-        start: +new Date
-    });
-        
-    // don't act if there's a pending queue
-    if (pending) {
-        return;
-    }  
-
-    var elem = document.body;
-    
-    var step = function(time) {
-        
-        var now = time || +new Date;
-        var scrollX = 0;
-        var scrollY = 0; 
-    //console.log(que.length);
-        for (var i = 0; i < que.length; i++) {
+   
             
-            var item = que[i];
-            var elapsed  = now - item.start;
-            var finished = (elapsed >= animtime);
-            
-            // scroll position: [0, 1]
-            var position = (finished) ? 1 : elapsed / animtime;
-            
-            // easing [optional]
-            if (pulseAlgorithm) {
-                position = pulse(position);
+            function setDirection(delta){
+                                if (!settings.isScrollableV){
+                                                                stepAmt = settings.hwheelspeed;
+                                        direction =(delta > 0) ? 'left' : 'right'
+                                }
+                                else{
+                                                                stepAmt = settings.vwheelspeed;
+                                        direction =(delta > 0) ? 'up' : 'down'                        
+                                }
             }
             
-            // only need the difference
-            var x = ((item.x * position) - item.lastX);
-            var y = ((item.y * position) - item.lastY);
-            
-            // add this to the total scrolling
-            scrollX = (scrollX + x);
-            scrollY = (scrollY + y);            
-            
-            // update last values
-            item.lastX = (item.lastX + x);
-            item.lastY = (item.lastY + y);
-        
-            // delete and step back if it's over
-            if (finished) {
-                que.splice(i, 1); i--;
-            }
-            
-          // console.log(y);
-        }
-
-        // scroll left and top
-     
-          //pane.scrollByX(scrollY*80);
-          jsp.scrollBy(scrollX*settings.mouseWheelSpeed, scrollY*settings.mouseWheelSpeed)
-        
-        
-        // clean up if there's nothing left to do
-        if (!left && !top) {
-            que = [];
-        }
-        
-        if (que.length) { 
-            requestFrame(step, elem, (delay / framerate + 1)); 
-        } else { 
-            pending = false;
-        }
-    };
-    
-    // start a new queue of actions
-    requestFrame(step, elem, 0);
-    pending = true;
-}
-
-
-
-/***********************************************
- * HELPERS
- ***********************************************/
-
-
-
-function directionCheck(x, y) {
-    x = (x > 0) ? 1 : -1;
-    y = (y > 0) ? 1 : -1;
-    if (direction.x !== x || direction.y !== y) {
-        direction.x = x;
-        direction.y = y;
-        que = [];
-        lastScroll = 0;
-    }
-}
-
-var requestFrame = (function(){
-      return  window.requestAnimationFrame       || 
-              window.webkitRequestAnimationFrame || 
-              function(callback, element, delay){
-                  window.setTimeout(callback, delay || (1000/60));
-              };
-})();
-
-
-/***********************************************
- * PULSE
- ***********************************************/
- 
-/**
- * Viscous fluid with a pulse for part and decay for the rest.
- * - Applies a fixed force over an interval (a damped acceleration), and
- * - Lets the exponential bleed away the velocity over a longer interval
- * - Michael Herf, http://stereopsis.com/stopping/
- */
-function pulse_(x) {
-    var val, start, expx;
-    // test
-    x = x * pulseScale;
-    if (x < 1) { // acceleartion
-        val = x - (1 - Math.exp(-x));
-    } else {     // tail
-        // the previous animation ended here:
-        start = Math.exp(-1);
-        // simple viscous drag
-        x -= 1;
-        expx = 1 - Math.exp(-x);
-        val = start + (expx * (1 - start));
-    }
-    return val * pulseNormalize;
-}
-
-function pulse(x) {
-    if (x >= 1) return 1;
-    if (x <= 0) return 0;
-
-    if (pulseNormalize == 1) {
-        pulseNormalize /= pulse_(1);
-    }
-    return pulse_(x);
-}
-
-            
-            
-            
-
             function initMousewheel()
             {
-                container.unbind(mwEvent).bind(
+                TC.home.cache.body.off(mwEvent).bind(
                     mwEvent,
                     function (event, delta, deltaX, deltaY) {
                                 if(!TC.home.navopen){
-                        var dX = horizontalDragPosition, dY = verticalDragPosition;
+                                                                setDirection(delta);
+                                 
+                                                     if(!running){                                          
+                                                                running=true;
+                                                                animateLoop();
+                                                     }
+                                
+                               
+                                                                var dX = horizontalDragPosition, dY = verticalDragPosition;
 
-                        if (!settings.isScrollableV){
-                                smoothWheel(-deltaY, deltaY);                           
-                        }
-                        else{
-                            smoothWheel(deltaX, -deltaY);
-                        }
-                                }
-                        // return true if there was no movement so rest of screen can scroll
-                        return dX == horizontalDragPosition && dY == verticalDragPosition;
+                                                                if (!settings.isScrollableV){
+                                                                                                smoothWheel(-delta);                           
+                                                                }
+                                                                else{
+                                                                                                smoothWheel(-delta);
+                                                                }
+                                                               
+                               
+                                // return true if there was no movement so rest of screen can scroll
+                                 return dX == horizontalDragPosition && dY == verticalDragPosition;
+                                 }
+                        
                     }
                 );
             }
 
+            
+                
+            
+            
             function removeMousewheel()
             {
-                container.unbind(mwEvent);
+                TC.home.cache.body.unbind(mwEvent);
             }
 
             function nil()
@@ -1417,6 +1314,7 @@ function pulse(x) {
                 elem.replaceWith(originalElement.append(pane.children()));
                 originalElement.scrollTop(currentY);
                 originalElement.scrollLeft(currentX);
+                removeMousewheel();
 
                 // clear reinitialize timer if active
                 if (reinitialiseInterval) {
@@ -1668,7 +1566,39 @@ function pulse(x) {
         scrollPagePercent           : .8,        // Percent of visible area scrolled when pageUp/Down or track area pressed
         isScrollableV               : true,        // force overflow-y hidden
         isScrollableH               : true,       // force overflow-x hidden
+        hwheelspeed                 : 25,
+        vwheelspeed                 : 10,
         oncomplete                  : function(){}
     };
 
 })(jQuery,this);
+
+
+ function normalizeWheelDelta() {
+        // Keep a distribution of observed values, and scale by the
+        // 33rd percentile.
+       
+        var distribution = [], done = null, scale = 30;
+        return function (n) {
+            // Zeroes don't count.
+             console.log('ok');
+            if (n == 0) return n;
+            // After 500 samples, we stop sampling and keep current factor.
+            if (done != null) return n * done;
+            var abs = Math.abs(n);
+            // Insert value (sorted in ascending order).
+            outer: do { // Just used for break goto
+                for (var i = 0; i < distribution.length; ++i) {
+                    if (abs <= distribution[i]) {
+                        distribution.splice(i, 0, abs);
+                        break outer;
+                    }
+                }
+                distribution.push(abs);
+            } while (false);
+            // Factor is scale divided by 33rd percentile.
+            var factor = scale / distribution[Math.floor(distribution.length / 3)];
+            if (distribution.length == 500) done = factor;
+            return n * factor;
+        };
+    }
