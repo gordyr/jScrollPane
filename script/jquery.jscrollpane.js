@@ -158,7 +158,7 @@
                     container.find('>.jspVerticalBar,>.jspHorizontalBar').remove().end();
                 }
 
-                                 var p = probePane();	
+                                 var p = probePane();    
                                 contentWidth = p.width;
                                 contentHeight = p.height;
 
@@ -970,13 +970,8 @@ var container, running=false, currentY = 0, targetY = 0, oldY = 0, maxScrollTop=
                                         direction =(delta > 0) ? 'up' : 'down'                        
                                 }
             }
-            
-            function initMousewheel()
-            {
-                TC.home.cache.body.off(mwEvent).bind(
-                    mwEvent,
-                    function (event, delta, deltaX, deltaY) {
-                                if(!TC.home.navopen){
+            function performScroll(event, delta, deltaX, deltaY){
+                                 if(!TC.home.navopen){
                                                                 setDirection(delta);
                                  
                                                      if(!running){                                          
@@ -999,17 +994,31 @@ var container, running=false, currentY = 0, targetY = 0, oldY = 0, maxScrollTop=
                                  return dX == horizontalDragPosition && dY == verticalDragPosition;
                                  }
                         
-                    }
-                );
-            }
 
-            
+            }
+            function initMousewheel()
+            {
                 
-            
-            
+                if(!isScrollableV && isScrollableH){
+                                TC.home.cache.body.unbind(mwEvent).bind(mwEvent, function(event, delta, deltaX, deltaY){
+                                             performScroll(event, delta, deltaX, deltaY);                   
+                                });                   
+                }
+                else{
+                
+                                elem.unbind(mwEvent).bind(mwEvent, function(event, delta, deltaX, deltaY){
+                                                                performScroll(event, delta, deltaX, deltaY);
+                                });
+                }
+            }
             function removeMousewheel()
             {
-                TC.home.cache.body.unbind(mwEvent);
+                if (!isScrollableV && isScrollableH){
+                                TC.home.cache.body.unbind(mwEvent);
+                }
+                else{
+                                elem.unbind(mwEvent);
+                }
             }
 
             function nil()
